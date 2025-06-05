@@ -1,0 +1,110 @@
+# Default values for spark chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# meta:
+#   owner:
+#   gitrepo:
+
+replicaCount: 1
+
+serviceDirectory:
+  # default service/component name, free to change
+  component: bigdata
+
+applicationType: workflow
+
+appLabels:
+  # custom:
+  #   key: value
+  custom: {}
+
+runAsJob: false
+
+image:
+  repository: rehanann/spark-py
+  tag: 345-2
+  pullPolicy: Always
+  command: ["/bin/bash"]
+  args: []
+#  command: ["/opt/spark/bin/spark-submit"]
+# environment variables
+envVars:
+  driver:
+    SPARK_LOG_DIR: /opt/spark/work-dir
+  executor:
+    SPARK_LOG_DIR: /opt/spark/work-dir
+
+# This allow to add any required key values to spark configuration, unless it should not duplicated.
+# e.g.
+# sparkconf:
+#  spark.sql.maxPlanStringLength: "2147483632"
+sparkConf:
+
+pyspark:
+  python: /usr/bin/python3
+  requirements:
+    #Fixed configmap file path location to /tmp/requirements.txt, this removes this PVC mandatory requirements.
+    filePath: /tmp/pip3_requirements.txt
+
+sparkClientPod:
+  required: true
+
+services:
+  ui:
+    enabled: true
+    type: ClusterIP
+    port: 4040
+  driver:
+    enabled: true
+    type: ClusterIP
+    port: 3000
+
+driver:
+  cores: 1
+  memory: 1g
+  limit:
+    cores: 1
+  request:
+    cores: 1
+executor:
+  cores: 1
+  memory: 1g
+  memoryOverhead: 1g
+  request:
+    cores: 1
+  limit:
+    cores: 1
+
+resources:
+  limits:
+    cpu: 1
+    memory: 1Gi
+  requests:
+    cpu: 1
+    memory: 1Gi
+
+dynamicAllocation:
+  enabled: false
+  executorIdleTimeout: 30s
+  # Values are chosen based on current YARN setting and existing quotas
+  executors:
+    minExecutors: 1
+    initialExecutors: 1
+    maxExecutors: 2
+  shuffle:
+    # disable external shuffle service, in k8s it is not used
+    service:
+      enabled: false
+    # instead of external shuffle service, tracking of pods which have shuffle blocks is used
+    tracking:
+      enabled: false
+    # timeout for the the pod to keep shuffle blocks
+    timeout: 30s
+
+# dependencies: {}
+
+sparkLogs: ERROR
+
+# Below settings control spark 3.5 (log4j2) log level values can be: error, warn, info, debug.
+spark35LogLevel: error

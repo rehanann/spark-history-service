@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-merged-configmap
+  labels:
+  {{- include "spark.commonLabels" . | indent 4 }}
+data:
+  spark-defaults.conf: |-
+    spark.master=k8s://https://kubernetes.default.svc:443
+    spark.submit.deployMode=client
+    spark.app.name={{ include "spark.name" . }}
+    spark.driver.host={{ include "spark.name" . }}
+    spark.driver.port={{ .Values.services.driver.port }}
+    spark.kubernetes.executor.podNamePrefix={{ include "spark.pod-name" . }}
+    # WKFM Template backward compatible as per version 3.19.02.
+    spark.driver.cores={{ .Values.driver.cores }}
+    spark.driver.memory={{ .Values.driver.memory }}
+    spark.kubernetes.driver.request.cores={{ .Values.driver.request.cores }}
+    spark.kubernetes.driver.limit.cores={{ .Values.driver.limit.cores }}
+    spark.executor.cores={{ .Values.executor.cores }}
+    spark.executor.memory={{ .Values.executor.memory }}
+    spark.executor.memoryOverhead={{ .Values.executor.memoryOverhead }}
+    spark.kubernetes.executor.request.cores={{ .Values.executor.request.cores }}
+    spark.kubernetes.executor.limit.cores={{ .Values.executor.limit.cores }}
+    # End WKFM Template backward compatible as per version 3.19.02.
+    spark.kubernetes.allocation.batch.size={{ .Values.allocationBatchSize }}
+    spark.kubernetes.authenticate.driver.serviceAccountName: default
+    spark.kubernetes.authenticate.executor.serviceAccountName: default
+    spark.kubernetes.allocation.batch.size: 10
+    
+    spark.kubernetes.driver.label.bigdata.instance={{ include "spark.name" . }}
+    spark.kubernetes.executor.label.bigdata.instance={{ include "spark.name" . }}
+    spark.kubernetes.driver.label.service-directory.service={{ .Values.serviceDirectory.component }}
+    spark.kubernetes.executor.label.service-directory.service={{ .Values.serviceDirectory.component }}
+    spark.kubernetes.executor.podTemplateFile={{ include "spark.exec-template-path" . }}
+
+    spark.kubernetes.namespace={{ .Release.Namespace }}
+    spark.kubernetes.container.image.pullPolicy={{.Values.image.pullPolicy}}
+    spark.kubernetes.container.image={{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+    # Any temporary file (e.g., local Python package cache) created by the executors need to be stored
+    # in a folder owned by the spark UID
+    spark.executorEnv.HOME=/opt/spark/work-dir
+
+    # custom env vars provided by the user
+    {{- range $key, $value := .Values.envVars.executor }}
+    spark.executorEnv.{{ $key }}={{ $value }}
+    {{- end }}
+
+    # Backward compatibility setting for reading ORC files
+    spark.sql.hive.convertMetastoreOrc=false
+
+    # PIP3 requirements provided on a shared volume
+    spark.executorEnv.PYSPARK_REQUIREMENTS={{ .Values.pyspark.requirements.filePath }}
+
+    # Dynamic Allocation
+    # spark.shuffle.service.enabled={{.Values.dynamicAllocation.shuffle.service.enabled}}
+    # spark.dynamicAllocation.enabled={{.Values.dynamicAllocation.enabled}}
+    # spark.dynamicAllocation.shuffleTracking.enabled={{.Values.dynamicAllocation.shuffle.tracking.enabled}}
+    # spark.dynamicAllocation.shuffleTimeout={{.Values.dynamicAllocation.shuffle.timeout}}
+    # spark.dynamicAllocation.executorIdleTimeout={{.Values.dynamicAllocation.executorIdleTimeout}}
+    # spark.dynamicAllocation.minExecutors={{.Values.dynamicAllocation.executors.minExecutors}}
+    # spark.dynamicAllocation.initialExecutors={{.Values.dynamicAllocation.executors.initialExecutors}}
+    # spark.dynamicAllocation.maxExecutors={{.Values.dynamicAllocation.executors.maxExecutors}}
+
+    # ivy settings
+    spark.jars.ivySettings=/opt/spark/conf/ivysettings.xml
+    spark.jars.ivy=/opt/spark/work-dir/.ivy2
+    spark.jars.repositories=https://repo.maven.apache.org/maven2
+
+    
+    
+  exec_pod_template.yaml: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: spark-exec
+      labels:
+        {{- include "spark.commonLabels" . | indent 8 }}
+        {{- include "test-label-for-executor" . | indent 8 }}
+      annotations:
+    spec:
+      serviceAccountName: default
+      volumes:
+        {{- include "spark.merged-configmap-volume" . | nindent 8 }}
+      containers:
+        - name: executor
+          volumeMounts:
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # command: [sh, -c, /opt/spark/work-dir/scripts/executor_startup.sh]
+          args:
+          env:
+            - name: SPARK_DRIVER_HOSTNAME
+              value: $(POD_IP)  # Use the driver's POD_IP
+  core-site.xml: |-
+    <configuration>
+      <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://hadoop-namenode.hive-hadoop.svc.cluster.local:9000</value>
+      </property>
+      <property>
+        <name>hadoop.security.authentication</name>
+        <value>simple</value>
+      </property>
+    </configuration>
+  hdfs-site.xml: |-
+    <configuration>
+      <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+      </property>
+      <property>
+        <name>dfs.permissions.enabled</name>
+        <value>false</value>
+      </property>
+    </configuration>
+
+    

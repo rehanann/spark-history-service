@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spark.pod-name" . }}
+  labels:
+    {{- include "spark.commonLabels" . | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "spark.selectorLabels" . | indent 6 }}
+      {{- include "test-label-for-driver" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "spark.name" . }}
+        {{- include "spark.commonLabels" . | indent 8 }}
+        {{- include "spark.selectorLabels" . | indent 8 }}
+        {{- include "test-label-for-driver" . | indent 8 }}
+        spark.driver: {{ include "spark.name" . }}
+      annotations:
+    spec:
+      hostname: {{ include "spark.name" . }}
+      serviceAccountName: default
+      containers:
+        - name: app
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{- toYaml .Values.image.command | nindent 12 }}
+          args:
+            {{- toYaml .Values.image.args | nindent 12 }}
+           # WKFM Template backward compatible as per version 3.19.02.
+          resources:
+             {{- toYaml .Values.resources | nindent 12 }}
+          stdin: true
+          tty: true
+          env:
+            - name: DRIVER_POD
+              value: "true"
+            - name: PYSPARK_PYTHON
+              value: {{.Values.pyspark.python}}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: SPARK_HOME
+              value: /opt/spark
+            {{- range $key, $value := .Values.envVars.driver }} {{/* cusom env vars for the driver */}}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          ports:
+            - containerPort: 4040
+              name: ui-port
+            - containerPort: {{.Values.services.driver.port}}
+              name: driver-port
+          volumeMounts:
+          {{- include "spark.pod-volumeMounts-spark-defaults-conf" . | nindent 10 }}
+          {{- include "spark.pod-volumeMounts-spark-exec-template" . | nindent 10 }}
+          {{- include "spark.pod-volumeMounts-core-site-template" . | nindent 10 }}
+          {{- include "spark.pod-volumeMounts-hdfs-site-template" . | nindent 10 }}
+      volumes:
+      {{- include "spark.merged-configmap-volume" . | nindent 6 }}
+

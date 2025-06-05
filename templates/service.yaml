@@ -1,0 +1,18 @@
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spark.name" . }}
+  labels:
+        {{- include "spark.commonLabels" . | indent 4 }}
+spec:
+  clusterIP: None
+  type: {{ .Values.services.driver.type }}
+  selector:
+        {{- include "spark.selectorLabels" . | indent 4 }}
+    spark.driver: {{ include "spark.name" . }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.services.driver.port }}
+      targetPort: {{ .Values.services.driver.port }}
