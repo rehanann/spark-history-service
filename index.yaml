@@ -3,12 +3,12 @@ entries:
   spark-chart:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2025-06-05T21:39:19.745699+01:00"
+    created: "2025-06-09T13:39:05.522897+01:00"
     description: A Helm chart for Kubernetes
-    digest: 9dc0caa76b31cceddfcd2d6dec64565bb511b7a0db6cb71d836b9274e32436b5
+    digest: b04c504ee99b7888dd703aab48436a0c6f12336431a72c4273bcf505c7de0824
     name: spark-chart
     type: application
     urls:
     - https://rehanann.github.io/spark-chart/spark-chart-0.1.0.tgz
     version: 0.1.0
-generated: "2025-06-05T21:39:19.744926+01:00"
+generated: "2025-06-09T13:39:05.522035+01:00"
