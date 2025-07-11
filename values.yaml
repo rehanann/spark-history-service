@@ -11,7 +11,7 @@ replicaCount: 1
 project:
   # default service/component name, free to change
   component: gdt
-  namespace: gdt
+  namespace: default
 
 applicationType: workflow
 
@@ -127,7 +127,7 @@ dynamicAllocation:
 sparkLogs: ERROR
 
 sharedVolume:
-  enabled: true
+  enabled: false
   useExisting: true
   mountPath: /opt/spark/work-dir/shared
   existingPvcName: gdt-shared

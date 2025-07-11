@@ -45,35 +45,19 @@ b-{{ .Release.Namespace }}-{{- required "A project.component is required" .Value
 {{ include "spark.name" . }}
 {{- end -}}
 
-
-
-
-
 {{- define "spark.executor.container.name" -}}
-{{- if .Values.sox.enabled}}
-{{- printf "app" -}}
-{{ else }}
 {{- printf "spark-kubernetes-executor" -}}
 {{- end -}}
-{{- end -}}
+
 
 {{- define "spark.spark-defaults-conf-cm-name" -}}
 {{ include "spark.name" . }}-spark-defaults-conf-cm
-{{- end -}}
-
-{{- define "spark.dependenies-yaml-cm-name" -}}
-{{ .Release.Name }}-dependencies-yaml
 {{- end -}}
 
 {{- define "spark.exec-pod-yaml-cm-name" -}}
 {{ include "spark.name" . }}-exec-pod-yaml
 {{- end -}}
 
-
-
-{{- define "spark.spark-metric-config-cm-name" -}}
-{{ include "spark.name" . }}-spark-metric-config
-{{- end -}}
 
 {{- define "spark.shared-pvc-name" -}}
 {{- if .Values.sharedVolume.useExisting }}
@@ -107,13 +91,6 @@ b-{{ .Release.Namespace }}-{{- required "A project.component is required" .Value
 - name: spark-exec-template
   configMap:
     name: {{ include "spark.exec-pod-yaml-cm-name" . }}
-{{- end -}}
-
-
-{{- define "spark.pod-volumes-spark-metric-config" -}}
-- name: spark-metric-config
-  configMap:
-    name: {{ include "spark.spark-metric-config-cm-name" . }}
 {{- end -}}
 
 {{- define "spark.merged-configmap-volume" -}}
@@ -158,18 +135,13 @@ b-{{ .Release.Namespace }}-{{- required "A project.component is required" .Value
   mountPath: {{ .Values.sharedVolume.mountPath }}
 {{- end -}}
 
-{{- define "spark.pod-volumeMounts-spark-metric-config" -}}
-- name: merged-configmap-volume
-  mountPath: {{ .Values.metrics.mountPath }}
-  subPath: event-metrics.json
-{{- end -}}
 
 {{/* Common labels */}}
 
 {{- define "spark.commonLabels" -}}
 {{ include "spark.selectorLabels" . }}
 bigdata.instance: {{ include "spark.pod-name" . }}
-service-directory.service: {{ .Values.project.component | default "bigdata"}}
+service-directory.service: {{ .Values.project.component | default "gdt"}}
 helm.sh/chart: {{ include "spark.chart" . }}
 app.kubernetes.io/name: {{ include "spark.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
@@ -212,264 +184,6 @@ app.instance: {{ include "spark.name" . }}
 {{/*
     End dynamic pvc.
 */}}
-
-
-{{/*
-Hive site xml settings.
-*/}}
-
-{{- define "spark.hive-site-xml-cm-name" -}}
-{{ include "spark.name" . }}-hive-site-xml-cm
-{{- end -}}
-
-{{- define "spark.pod-volumes-hive-site-xml" -}}
-{{- if .Values.hive.siteXml.enabled}}
-- name: hive-site-xml
-  configMap:
-    name: {{ include "spark.hive-site-xml-cm-name" . }}
-{{- end }}
-{{- end -}}
-
-{{- define "spark.pod-volumeMounts-hive-site-xml" -}}
-{{- if .Values.hive.siteXml.enabled}}
-- name: merged-configmap-volume
-  mountPath: /opt/spark/conf/hive-site.xml
-  subPath: hive-site.xml
-{{- end}}
-{{- end -}}
-
-
-{{/*
-End of Hive site xml settings.
-*/}}
-
-{{/*
-    Hadoop conf Log4j CM
-*/}}
-
-{{- define "spark.hadoopconf-log4j-properties-conf" -}}
-{{ include "spark.name" . }}-hadoopconf-log4j-properties-conf
-{{- end -}}
-
-{{- define "spark.pod-volumes-hadoopconf-log4j-properties-conf" -}}
-- name: hadoopconf-log4j-properties-conf
-  configMap:
-    name: {{ include "spark.hadoopconf-log4j-properties-conf" . }}
-{{- end -}}
-
-
-{{- define "spark.pod-volumeMounts-hadoopconf-log4j-properties-conf" -}}
-- name: merged-configmap-volume
-  mountPath: /etc/hadoop/conf/log4j.properties
-  subPath: log4j.properties-hadoop
-{{- end -}}
-
-{{/*
-    End Hadoop conf Log4j CM
-*/}}
-
-{{/*
-    Log4j CM
-*/}}
-
-{{- define "spark.log4j-properties-conf" -}}
-{{ include "spark.name" . }}-log4j-properties-conf
-{{- end -}}
-
-{{- define "spark.pod-volumes-log4j-properties-conf" -}}
-- name: log4j-properties-conf
-  configMap:
-    name: {{ include "spark.log4j-properties-conf" . }}
-{{- end -}}
-
-
-{{- define "spark.pod-volumeMounts-log4j-properties-conf" -}}
-- name: merged-configmap-volume
-  mountPath: /opt/spark/conf/log4j.properties
-  subPath: log4j.properties-spark
-{{- end -}}
-
-{{/*
-    End Log4j CM
-*/}}
-
-{{/*
-    Log4j2 CM
-*/}}
-
-{{- define "spark.log4j2-properties-conf" -}}
-{{ include "spark.name" . }}-log4j2-properties-conf
-{{- end -}}
-
-{{- define "spark.pod-volumes-log4j2-properties-conf" -}}
-- name: log4j2-properties-conf
-  configMap:
-    name: {{ include "spark.log4j2-properties-conf" . }}
-{{- end -}}
-
-
-{{- define "spark.pod-volumeMounts-log4j2-properties-conf" -}}
-- name: merged-configmap-volume
-  mountPath: /opt/spark/conf/log4j2.properties
-  subPath: log4j2.properties-spark
-{{- end -}}
-
-{{/*
-    End Log4j2 CM
-*/}}
-
-{{/*
-    Python modules requirement.txt declarations
-*/}}
-
-{{- define "spark.requirements-txt-driver-cm-name" -}}
-{{ include "spark.name" . }}-requirements-txt-driver-cm
-{{- end -}}
-
-{{- define "spark.requirements-txt-executor-cm-name" -}}
-{{ include "spark.name" . }}-requirements-txt-executor-cm
-{{- end -}}
-
-{{- define "spark.pod-volumes-driver-requirements-txt" -}}
-{{- if .Values.packages.enabled}}
-- name: driver-requirements-txt
-  configMap:
-    name: {{ include "spark.requirements-txt-driver-cm-name" . }}
-{{- end }}
-{{- end -}}
-
-{{- define "spark.pod-volumes-executor-requirements-txt" -}}
-{{- if .Values.packages.enabled}}
-- name: executor-requirements-txt
-  configMap:
-    name: {{ include "spark.requirements-txt-executor-cm-name" . }}
-{{- end }}
-{{- end -}}
-
-{{- define "spark.pod-volumeMounts-driver-requirements-txt" -}}
-{{- if .Values.packages.enabled }}
-- name: merged-configmap-volume
-  mountPath: /tmp/requirements.txt
-  subPath: requirements_driver.txt
-{{- end}}
-{{- end -}}
-
-{{- define "spark.pod-volumeMounts-executor-requirements-txt" -}}
-{{- if .Values.packages.enabled }}
-- name: merged-configmap-volume
-  mountPath: /tmp/requirements.txt
-  subPath: requirements_executor.txt
-{{- end}}
-{{- end -}}
-
-{{/*
-    End Python modules requirement.txt declarations
-*/}}
-
-
-{{/*
-Authx settings starts
-*/}}
-
-{{- define "spark.exec-pod-authxagent-yaml-cm-name" -}}
-{{ include "spark.name" . }}-exec-pod-authxagent-yaml
-{{- end -}}
-
-
-{{- define "spark.pod-volumes-spark-exec-authxagent-template" -}}
-- name: spark-exec-authxagent-template
-  configMap:
-    name: {{ include "spark.exec-pod-authxagent-yaml-cm-name" . }}
-{{- end -}}
-
-{{- define "spark.pod-volumeMounts-spark-exec-authxagent-template" -}}
-- name: merged-configmap-volume
-  mountPath: /opt/spark/conf/exec_pod_authxagent_template.yaml
-  subPath: exec_pod_authxagent_template.yaml
-{{- end -}}
-
-{{/*
-Authx settings ends
-*/}}
-
-
-{{/*
-Readiness settings
-*/}}
-{{- define "spark.driver-exe-pod-readiness-template" -}}
-readinessProbe:
-  exec:
-    command:
-    - /bin/bash
-    - -c
-    - |
-      retries=24
-      tries=0
-      while [ $tries -le $retries ]; do
-          if ! [ -f /tmp/.readiness_healthy.checked ]; then
-              sleep 5
-          else  
-              exit 0
-          fi
-          tries=$((tries + 1))
-      done
-  initialDelaySeconds: 5
-  periodSeconds: 5
-  {{/* failureThreshold: After a probe fails failureThreshold times in a row, 
-  Kubernetes considers that the overall check has failed: the container is not ready/healthy/live. 
-  failure threshold should match with retries variable, the default tries provdied 3 so after 15 seconds
-  if pod didnt able to start then it failed completly. e.g
-  https://stackoverflow.com/questions/74714076/how-does-the-failurethreshold-work-in-liveness-readiness-probes-does-it-have#:~:text=Liveness%20probe%20%3A,so%20after%203%20failed%20probes.
-   */}}
-  failureThreshold: 24
-{{- end -}}
-{{/*
-Readiness settings end
-*/}}
-
-
-{{/*
-liveness settings
-*/}}
-{{- define "spark.driver-exe-pod-liveness-template" -}}
-livenessProbe:
-  exec:
-    command:
-    - /bin/bash
-    - -c
-    - |
-      retries=96
-      tries=0
-      while [ $tries -le $retries ]; do
-          if [[ -f /tmp/.liveness_failed.checked ]]; then
-              tries=$retries
-              exit 1
-          elif ! [[ -f /tmp/.liveness_healthy.checked ]]; then
-              sleep 5
-          else
-              exit 0
-          fi
-          tries=$((tries + 1))
-      done
-  initialDelaySeconds: 5
-  periodSeconds: 5
-  {{/* failureThreshold: After a probe fails failureThreshold times in a row, 
-  Kubernetes considers that the overall check has failed: the container is not ready/healthy/live. 
-  failure threshold should match with retries variable, the default tries provdied 3 so after 15 seconds
-  if pod didnt able to start then it failed completly.
-   */}}
-  failureThreshold: 96
-{{- end -}}
-{{/*
-liveness settings end
-*/}}
-
-{{/* fluentbit mounts */}}
-{{- define "spark.pod-volumeMounts-spark-driver-exec-fluentbit-template" -}}
-- name: varlog
-  mountPath: /var/fluentbit 
-{{- end -}}
-{{/* end fluentbit mounts */}}
 
 {{- define "test-label-for-driver" -}}
 {{- if .Values.test}}
