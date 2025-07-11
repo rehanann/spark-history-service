@@ -68,7 +68,14 @@ data:
     spark.jars.ivy=/opt/spark/work-dir/.ivy2
     spark.jars.repositories=https://repo.maven.apache.org/maven2
 
-    
+    spark.eventLog.enabled={{.Values.eventLogs.enabled}}
+    spark.eventLog.dir={{.Values.eventLogs.directory}}
+    # custom spark conf vars provided by the user
+    {{- range $key, $value := .Values.sparkConf }}
+    {{- if ne $key "spark.kubernetes.executor.podNamePrefix" }}
+    {{ $key }}={{ $value }}
+    {{- end }}
+    {{- end }}
     
   exec_pod_template.yaml: |-
     apiVersion: v1
@@ -93,27 +100,5 @@ data:
           env:
             - name: SPARK_DRIVER_HOSTNAME
               value: $(POD_IP)  # Use the driver's POD_IP
-  core-site.xml: |-
-    <configuration>
-      <property>
-        <name>fs.defaultFS</name>
-        <value>hdfs://hadoop-namenode.hive-hadoop.svc.cluster.local:9000</value>
-      </property>
-      <property>
-        <name>hadoop.security.authentication</name>
-        <value>simple</value>
-      </property>
-    </configuration>
-  hdfs-site.xml: |-
-    <configuration>
-      <property>
-        <name>dfs.replication</name>
-        <value>1</value>
-      </property>
-      <property>
-        <name>dfs.permissions.enabled</name>
-        <value>false</value>
-      </property>
-    </configuration>
 
     

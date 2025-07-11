@@ -16,3 +16,8 @@ spec:
     - protocol: TCP
       port: {{ .Values.services.driver.port }}
       targetPort: {{ .Values.services.driver.port }}
+      name: driver-port
+    - protocol: TCP
+      port: {{ .Values.services.ui.port }}
+      targetPort: {{ .Values.services.ui.port }}
+      name: ui-port

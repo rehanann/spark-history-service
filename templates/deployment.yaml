@@ -54,7 +54,28 @@ spec:
                   apiVersion: v1
                   fieldPath: status.podIP
             - name: SPARK_HOME
-              value: /opt/spark
+              value: /opt/spark/work-dir
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: spark-minio-secret
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: spark-minio-secret
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: SPARK_HISTORY_OPTS
+              value: >
+                -Dspark.history.fs.logDirectory=s3a://historyservice/logs
+                -Dspark.hadoop.fs.s3a.endpoint=
+                -Dspark.hadoop.fs.s3a.access.key=$(AWS_ACCESS_KEY_ID)
+                -Dspark.hadoop.fs.s3a.secret.key=$(AWS_SECRET_ACCESS_KEY)
+                -Dspark.hadoop.fs.s3a.path.style.access=true
+                -Dspark.hadoop.fs.s3a.connection.ssl.enabled=false
+                -Dspark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+                -Dspark.history.fs.cleaner.enabled=true
+                -Dspark.history.fs.cleaner.maxAge=7d
             {{- range $key, $value := .Values.envVars.driver }} {{/* cusom env vars for the driver */}}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -66,9 +87,8 @@ spec:
               name: driver-port
           volumeMounts:
           {{- include "spark.pod-volumeMounts-spark-defaults-conf" . | nindent 10 }}
-          {{- include "spark.pod-volumeMounts-spark-exec-template" . | nindent 10 }}
-          {{- include "spark.pod-volumeMounts-core-site-template" . | nindent 10 }}
-          {{- include "spark.pod-volumeMounts-hdfs-site-template" . | nindent 10 }}
       volumes:
       {{- include "spark.merged-configmap-volume" . | nindent 6 }}
+      
+      
 

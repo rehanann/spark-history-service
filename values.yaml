@@ -10,7 +10,7 @@ replicaCount: 1
 
 serviceDirectory:
   # default service/component name, free to change
-  component: bigdata
+  component: gdt
 
 applicationType: workflow
 
@@ -23,10 +23,23 @@ runAsJob: false
 
 image:
   repository: rehanann/spark-py
-  tag: 345-2
+  tag: 3.4.0-extended
   pullPolicy: Always
-  command: ["/bin/bash"]
-  args: []
+  command: ["/opt/java/openjdk/zulu11.66.15-ca-jdk11.0.20-linux_x64/bin/java"]
+  args:
+    - "-cp"
+    - "/opt/spark/conf/:/opt/spark/jars/*"
+    - "-Dspark.history.fs.logDirectory=s3a://historyservice/logs"
+    - "-Dspark.hadoop.fs.s3a.endpoint="
+    - "-Dspark.hadoop.fs.s3a.access.key="
+    - "-Dspark.hadoop.fs.s3a.secret.key="
+    - "-Dspark.hadoop.fs.s3a.path.style.access=true"
+    - "-Dspark.hadoop.fs.s3a.connection.ssl.enabled=false"
+    - "-Dspark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem"
+    - "-Dspark.history.fs.cleaner.enabled=true"
+    - "-Dspark.history.fs.cleaner.maxAge=7d"
+    - "-Xmx1g"
+    - "org.apache.spark.deploy.history.HistoryServer"
 #  command: ["/opt/spark/bin/spark-submit"]
 # environment variables
 envVars:
@@ -40,6 +53,14 @@ envVars:
 # sparkconf:
 #  spark.sql.maxPlanStringLength: "2147483632"
 sparkConf:
+  spark.hadoop.fs.s3a.endpoint:
+  spark.hadoop.fs.s3a.access.key:
+  spark.hadoop.fs.s3a.secret.key:
+  spark.hadoop.fs.s3a.path.style.access: true
+  spark.hadoop.fs.s3a.connection.ssl.enabled: false
+  spark.hadoop.fs.s3a.impl: org.apache.hadoop.fs.s3native.NativeS3FileSystem
+  spark.history.fs.cleaner.enabled: true
+  spark.history.fs.cleaner.maxAge: 7d
 
 pyspark:
   python: /usr/bin/python3
@@ -54,7 +75,7 @@ services:
   ui:
     enabled: true
     type: ClusterIP
-    port: 4040
+    port: 18080
   driver:
     enabled: true
     type: ClusterIP
@@ -102,9 +123,18 @@ dynamicAllocation:
     # timeout for the the pod to keep shuffle blocks
     timeout: 30s
 
-# dependencies: {}
-
 sparkLogs: ERROR
 
-# Below settings control spark 3.5 (log4j2) log level values can be: error, warn, info, debug.
-spark35LogLevel: error
+eventLogs:
+  # spark.eventLog.enabled
+  enabled: true
+  # spark.eventLog.dir
+  #  Example for shared PVC
+  #  directory: /opt/spark/work-dir/shared/history
+  # directory: /tmp/spark-events
+  directory: s3a://historyservice/logs
+  persistent: false
+  #
+
+historyServer:
+  enabled: true
