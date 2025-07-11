@@ -8,9 +8,10 @@
 
 replicaCount: 1
 
-serviceDirectory:
+project:
   # default service/component name, free to change
   component: gdt
+  namespace: gdt
 
 applicationType: workflow
 
@@ -30,9 +31,9 @@ image:
     - "-cp"
     - "/opt/spark/conf/:/opt/spark/jars/*"
     - "-Dspark.history.fs.logDirectory=s3a://historyservice/logs"
-    - "-Dspark.hadoop.fs.s3a.endpoint="
-    - "-Dspark.hadoop.fs.s3a.access.key="
-    - "-Dspark.hadoop.fs.s3a.secret.key="
+    - "-Dspark.hadoop.fs.s3a.endpoint=http://minio.default.svc.cluster.local:9000"
+    - "-Dspark.hadoop.fs.s3a.access.key=bU0c4naTz98KynxEsHf1"
+    - "-Dspark.hadoop.fs.s3a.secret.key=dNOkRi7cbUsw0ZHnN9coosKO0iyu21XJpieAayZd"
     - "-Dspark.hadoop.fs.s3a.path.style.access=true"
     - "-Dspark.hadoop.fs.s3a.connection.ssl.enabled=false"
     - "-Dspark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem"
@@ -53,9 +54,9 @@ envVars:
 # sparkconf:
 #  spark.sql.maxPlanStringLength: "2147483632"
 sparkConf:
-  spark.hadoop.fs.s3a.endpoint:
-  spark.hadoop.fs.s3a.access.key:
-  spark.hadoop.fs.s3a.secret.key:
+  spark.hadoop.fs.s3a.endpoint: http://minio.default.svc.cluster.local:9000
+  spark.hadoop.fs.s3a.access.key: bU0c4naTz98KynxEsHf1
+  spark.hadoop.fs.s3a.secret.key: dNOkRi7cbUsw0ZHnN9coosKO0iyu21XJpieAayZd
   spark.hadoop.fs.s3a.path.style.access: true
   spark.hadoop.fs.s3a.connection.ssl.enabled: false
   spark.hadoop.fs.s3a.impl: org.apache.hadoop.fs.s3native.NativeS3FileSystem
@@ -124,6 +125,12 @@ dynamicAllocation:
     timeout: 30s
 
 sparkLogs: ERROR
+
+sharedVolume:
+  enabled: true
+  useExisting: true
+  mountPath: /opt/spark/work-dir/shared
+  existingPvcName: gdt-shared
 
 eventLogs:
   # spark.eventLog.enabled

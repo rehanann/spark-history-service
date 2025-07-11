@@ -2,6 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ include "spark.name" . }}-role
+  namespace: {{ .Values.project.namespace }}
   labels:
     {{- include "spark.commonLabels" . | indent 4 }}
 rules:
@@ -20,6 +21,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ include "spark.name" . }}-role-binding
+  namespace: {{ .Values.project.namespace }}
   labels:
     {{- include "spark.commonLabels" . | indent 4 }}
 subjects:

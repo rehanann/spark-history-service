@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "spark.pod-name" . }}
+  namespace: {{ .Values.project.namespace }}
   labels:
     {{- include "spark.commonLabels" . | indent 4 }}
 spec:
@@ -68,7 +69,7 @@ spec:
             - name: SPARK_HISTORY_OPTS
               value: >
                 -Dspark.history.fs.logDirectory=s3a://historyservice/logs
-                -Dspark.hadoop.fs.s3a.endpoint=
+                -Dspark.hadoop.fs.s3a.endpoint=http://minio.default.svc.cluster.local:9000
                 -Dspark.hadoop.fs.s3a.access.key=$(AWS_ACCESS_KEY_ID)
                 -Dspark.hadoop.fs.s3a.secret.key=$(AWS_SECRET_ACCESS_KEY)
                 -Dspark.hadoop.fs.s3a.path.style.access=true
@@ -87,8 +88,15 @@ spec:
               name: driver-port
           volumeMounts:
           {{- include "spark.pod-volumeMounts-spark-defaults-conf" . | nindent 10 }}
+          {{- include "spark.pod-volumeMounts-spark-exec-template" . | nindent 10 }}
+          {{- if .Values.sharedVolume.enabled }}
+          {{- include "spark.pod-volumeMounts-shared" . | nindent 10 }}
+          {{- end }}
       volumes:
       {{- include "spark.merged-configmap-volume" . | nindent 6 }}
+      {{- if .Values.sharedVolume.enabled }}
+      {{- include "spark.pod-volumes-share-pvc" . | nindent 6 }}
+      {{- end }}
       
       
 
